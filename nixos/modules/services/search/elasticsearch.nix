@@ -12,14 +12,17 @@ let
     # TODO: find a way to enable security manager
     security.manager.enabled: false
     cluster.name: ${cfg.cluster_name}
+    path:
+      data: ${cfg.dataDir}
     ${cfg.extraConf}
   '';
+#      logs: ${cfg.dataDir}/log
 
   configDir = pkgs.buildEnv {
     name = "elasticsearch-config";
     paths = [
       (pkgs.writeTextDir "elasticsearch.yml" esConfig)
-      (pkgs.writeTextDir "logging.yml" cfg.logging)
+      (pkgs.writeTextDir "log4j2.properties" cfg.logging)
     ];
   };
 
@@ -41,8 +44,8 @@ in {
 
     package = mkOption {
       description = "Elasticsearch package to use.";
-      default = pkgs.elasticsearch2;
-      defaultText = "pkgs.elasticsearch2";
+      default = pkgs.elasticsearch5;
+      defaultText = "pkgs.elasticsearch5";
       type = types.package;
     };
 
@@ -86,16 +89,12 @@ in {
     logging = mkOption {
       description = "Elasticsearch logging configuration.";
       default = ''
-        rootLogger: INFO, console
-        logger:
-          action: INFO
-          com.amazonaws: WARN
-        appender:
-          console:
-            type: console
-            layout:
-              type: consolePattern
-              conversionPattern: "[%d{ISO8601}][%-5p][%-25c] %m%n"
+        rootLogger.level = INFO
+        rootLogger.appenderRef.stdout.ref = STDOUT
+        appender.console.type = Console
+	appender.console.name = STDOUT
+	appender.console.layout.type = PatternLayout
+	appender.console.layout.pattern = [%d{ISO8601}][%-5p][%-25c] %m%n
       '';
       type = types.str;
     };
@@ -135,7 +134,7 @@ in {
         ES_HOME = cfg.dataDir;
       };
       serviceConfig = {
-        ExecStart = "${cfg.package}/bin/elasticsearch -Des.path.conf=${configDir} ${toString cfg.extraCmdLineOptions}";
+        ExecStart = "${cfg.package}/bin/elasticsearch -Epath.conf=${configDir} ${toString cfg.extraCmdLineOptions}";
         User = "elasticsearch";
         PermissionsStartOnly = true;
       };
@@ -143,6 +142,8 @@ in {
         mkdir -m 0700 -p ${cfg.dataDir}
 
         # Install plugins
+	rm -r ${cfg.dataDir}/plugins
+	mkdir -m 0700 -p ${cfg.dataDir}/plugins
         ln -sfT ${esPlugins}/plugins ${cfg.dataDir}/plugins
         ln -sfT ${cfg.package}/lib ${cfg.dataDir}/lib
         ln -sfT ${cfg.package}/modules ${cfg.dataDir}/modules
