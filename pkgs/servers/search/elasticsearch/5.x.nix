@@ -3,12 +3,12 @@
 with stdenv.lib;
 
 stdenv.mkDerivation rec {
-  version = "5.2.1";
+  version = "5.2.2";
   name = "elasticsearch-${version}";
 
   src = fetchurl {
     url = "https://artifacts.elastic.co/downloads/elasticsearch/${name}.tar.gz";
-    sha256 = "0xa416cchksjdpzmcvr15hk9mqny5m54ffh6qvwbqsw9p35zx2zj";
+    sha256 = "1jcamx7ngsll5914p36cdsr11ga8hl16yf1d6i4qjjkrjl39726g";
   };
 
   patches = [ ./es-home-5.x.patch ./es-classpath-5.x.patch ];
